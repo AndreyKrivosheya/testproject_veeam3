@@ -40,18 +40,24 @@ namespace compressor.Common.Threading
                                 break;
                             case 0:
                             default:
-                                var workload = Workloads[index];
-                                if(workload != null)
+                                try
                                 {
-                                    try
+                                    var workload = Workloads[index];
+                                    if(workload != null)
                                     {
-                                        workload.Invoke();
+                                        try
+                                        {
+                                            workload.Invoke();
+                                        }
+                                        finally
+                                        {
+                                            Workloads[index] = null;
+                                        }
                                     }
-                                    finally
-                                    {
-                                        Workloads[index] = null;
-                                        WorkloadsFinishedEvents[index].Release();
-                                    }
+                                }
+                                finally
+                                {
+                                    WorkloadsFinishedEvents[index].Release();
                                 }
                                 break;
                         }
