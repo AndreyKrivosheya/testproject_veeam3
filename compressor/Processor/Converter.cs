@@ -5,14 +5,11 @@ using compressor.Processor.Settings;
 
 namespace compressor.Processor
 {
-    abstract class Converter
+    abstract class Converter: Component
     {
-        public Converter(SettingsProvider settings)
+        public Converter(SettingsProvider settings) : base(settings)
         {
-            this.Settings = settings;
         }
-
-        readonly protected SettingsProvider Settings;
 
         public abstract byte[] Convert(byte[] data);
     }

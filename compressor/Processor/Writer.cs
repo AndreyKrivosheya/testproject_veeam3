@@ -7,17 +7,12 @@ using compressor.Processor.Settings;
 
 namespace compressor.Processor
 {
-    abstract class Writer
+    abstract class Writer: Component
     {
-        public Writer(SettingsProvider settings, Stream streamToWrite)
+        public Writer(SettingsProvider settings) : base(settings)
         {
-            this.Settings = settings;
-            this.StreamToWrite = streamToWrite;
         }
 
-        readonly protected SettingsProvider Settings;
-        readonly protected Stream StreamToWrite;
-
-        public abstract void WriteBlock(byte[] data);
+        public abstract void WriteBlock(Stream output, byte[] data);
    }
 }

@@ -4,17 +4,12 @@ using compressor.Processor.Settings;
 
 namespace compressor.Processor
 {
-    abstract class Reader
+    abstract class Reader : Component
     {
-        public Reader(SettingsProvider settings, Stream streamToRead)
+        public Reader(SettingsProvider settings) : base(settings)
         {
-            this.Settings = settings;
-            this.StreamToRead = streamToRead;
         }
 
-        readonly protected SettingsProvider Settings;
-        readonly protected Stream StreamToRead;
-
-        public abstract byte[] ReadBlock();
+        public abstract byte[] ReadBlock(Stream input);
     }
 }

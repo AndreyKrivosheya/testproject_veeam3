@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Threading;
 
 using compressor.Processor.Settings;
 
@@ -9,18 +7,18 @@ namespace compressor.Processor
 {
     class WriterToArchive: Writer
     {
-        public WriterToArchive(SettingsProvider settings, Stream streamToWrite)
-            : base(settings, streamToWrite)
+        public WriterToArchive(SettingsProvider settings)
+            : base(settings)
         {
         }
 
-        public sealed override void WriteBlock(byte[] data)
+        public sealed override void WriteBlock(Stream output, byte[] data)
         {
             // write block data length
             try
             {
                 var blockLengthBuffer = BitConverter.GetBytes((Int64)data.Length);
-                StreamToWrite.Write(blockLengthBuffer, 0, blockLengthBuffer.Length);
+                output.Write(blockLengthBuffer, 0, blockLengthBuffer.Length);
             }
             catch(Exception e)
             {
@@ -29,8 +27,8 @@ namespace compressor.Processor
             // write block data
             try
             {
-                StreamToWrite.Write(data, 0, data.Length);
-                StreamToWrite.Flush();
+                output.Write(data, 0, data.Length);
+                output.Flush();
             }
             catch(Exception e)
             {

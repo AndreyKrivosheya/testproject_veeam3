@@ -8,23 +8,10 @@ namespace compressor.Processor
     class ProcessorCompress: Processor
     {
         public ProcessorCompress(SettingsProvider settings)
-            : base(settings)
+            : base(settings, new ReaderFromFile(settings), new ConverterCompress(settings), new WriterToArchive(settings))
         {
         }
          
-        protected sealed override Reader CreateReader(Stream input)
-        {
-            return new ReaderFromFile(Settings, input);
-        }
-        protected sealed override Converter CreateConverter()
-        {
-            return new ConverterCompress(Settings);
-        }
-        protected sealed override Writer CreateWriter(Stream output)
-        {
-            return new WriterToArchive(Settings, output);
-        }
-
         public sealed override void Process(Stream input, Stream output)
         {
             try

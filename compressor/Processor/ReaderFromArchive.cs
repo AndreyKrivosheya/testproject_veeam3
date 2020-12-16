@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Threading;
 
 using compressor.Processor.Settings;
 
@@ -8,17 +7,17 @@ namespace compressor.Processor
 {
     class ReaderFromArchive: Reader
     {
-        public ReaderFromArchive(SettingsProvider settings, Stream streamToRead)
-            : base(settings, streamToRead)
+        public ReaderFromArchive(SettingsProvider settings)
+            : base(settings)
         {
         }
 
-        public sealed override byte[] ReadBlock()
+        public sealed override byte[] ReadBlock(Stream input)
         {
             try
             {
                 var blockLengthBuffer = new byte[sizeof(Int64)];
-                var blockLengthActuallyRead = StreamToRead.Read(blockLengthBuffer, 0, blockLengthBuffer.Length);
+                var blockLengthActuallyRead = input.Read(blockLengthBuffer, 0, blockLengthBuffer.Length);
                 if(blockLengthActuallyRead != 0)
                 {
                     if(blockLengthActuallyRead != sizeof(Int64))
@@ -28,7 +27,7 @@ namespace compressor.Processor
                     else
                     {
                         var blockBuffer = new byte[BitConverter.ToInt64(blockLengthBuffer, 0)];
-                        var blockActuallyRead = StreamToRead.Read(blockBuffer, 0, blockBuffer.Length);
+                        var blockActuallyRead = input.Read(blockBuffer, 0, blockBuffer.Length);
                         if(blockActuallyRead < blockBuffer.Length)
                         {
                             throw new InvalidDataException("Failed to read next block, read less bytes then block occupies");
@@ -46,7 +45,7 @@ namespace compressor.Processor
             }
             catch(Exception e)
             {
-                throw new ApplicationException("Failed to read blocks from archive", e);
+                throw new ApplicationException("Failed to read block from archive", e);
             }
         }
     }

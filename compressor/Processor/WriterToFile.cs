@@ -1,7 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Threading;
 
 using compressor.Processor.Settings;
 
@@ -9,17 +7,17 @@ namespace compressor.Processor
 {
     class WriterToFile: Writer
     {
-        public WriterToFile(SettingsProvider settings, Stream streamToWrite)
-            : base(settings, streamToWrite)
+        public WriterToFile(SettingsProvider settings)
+            : base(settings)
         {
         }
 
-        public sealed override void WriteBlock(byte[] data)
+        public sealed override void WriteBlock(Stream ouput, byte[] data)
         {
             try
             {
-                StreamToWrite.Write(data, 0, data.Length);
-                StreamToWrite.Flush();
+                ouput.Write(data, 0, data.Length);
+                ouput.Flush();
             }
             catch(Exception e)
             {

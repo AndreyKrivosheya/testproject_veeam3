@@ -40,6 +40,7 @@ namespace compressor.Processor
                             var compressedOriginal = outStreamRaw.ToArray();
                             var compressedHeaderStripped = new byte[compressedOriginal.Length - GZipStreamHelper.Header.Length];
                             Array.Copy(compressedOriginal, GZipStreamHelper.Header.Length, compressedHeaderStripped, 0, compressedHeaderStripped.Length);
+
                             return compressedHeaderStripped;
                         }
                     }
