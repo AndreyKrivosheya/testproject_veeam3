@@ -12,18 +12,18 @@ using compressor.Processor.Utils;
 
 namespace compressor.Processor
 {
-    abstract class Processor: Component
+    abstract class Processor
     {
-        public Processor(SettingsProvider settings, Reader reader, Converter converter, Writer writer) : base(settings)
+        public Processor(SettingsProvider settings)
         {
-            this.Reader = reader;
-            this.Converter = converter;
-            this.Writer = writer;
+            this.Settings = settings;
         }
+        
+        protected readonly SettingsProvider Settings;
          
-        readonly Reader Reader;
-        readonly Converter Converter;
-        readonly Writer Writer;
+        protected abstract byte[] ReadBlock(Stream input);
+        protected abstract byte[] ConvertBlock(byte[] data);
+        protected abstract void WriteBlock(Stream output, byte[] data);
 
         public virtual void Process(Stream input, Stream output)
         {
@@ -37,7 +37,7 @@ namespace compressor.Processor
                     // check if any errors happend
                     errors.Throw();
                     // read next block and process
-                    var block = Reader.ReadBlock(input);
+                    var block = ReadBlock(input);
                     if(block != null)
                     {
                         var eventThisBlockWritten = new ManualResetEvent(false);
@@ -47,12 +47,12 @@ namespace compressor.Processor
                                 try
                                 {
                                     // convert block (compress/decompress)
-                                    var blockConverted = Converter.Convert(block);
+                                    var blockConverted = ConvertBlock(block);
                                     // wait previous block was written to maintain order
                                     if(eventPreviousBlockWritten != null)
                                         eventPreviousBlockWritten.WaitOneAndDispose(cancellationOnError.Token);
                                     // write this block
-                                    Writer.WriteBlock(output, blockConverted);
+                                    WriteBlock(output, blockConverted);
                                     // notify this block is written
                                     eventThisBlockWritten.Set();
                                 }
