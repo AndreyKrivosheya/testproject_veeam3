@@ -29,37 +29,41 @@ namespace compressor.Common.Threading
             {
                 Threads[i] = new Thread((obj) => {
                     var index = (int)obj;
-                    
-                    var keepRunning = true;
-                    while(keepRunning)
+                    while(true)
                     {
-                        switch(WaitHandle.WaitAny(new WaitHandle[] { WorkloadsReadyEvents[index], ThreadsCancellation.Token.WaitHandle }, Timeout.Infinite))
+                        try
                         {
-                            case 1:
-                                keepRunning = false;
-                                break;
-                            case 0:
-                            default:
-                                try
+                            WorkloadsReadyEvents[index].WaitOne(ThreadsCancellation.Token);
+                            try
+                            {
+                                var workload = Workloads[index];
+                                if(workload != null)
                                 {
-                                    var workload = Workloads[index];
-                                    if(workload != null)
+                                    try
                                     {
-                                        try
-                                        {
-                                            workload.Invoke();
-                                        }
-                                        finally
-                                        {
-                                            Workloads[index] = null;
-                                        }
+                                        workload.Invoke();
+                                    }
+                                    finally
+                                    {
+                                        Workloads[index] = null;
                                     }
                                 }
-                                finally
-                                {
-                                    WorkloadsFinishedEvents[index].Release();
-                                }
+                            }
+                            finally
+                            {
+                                WorkloadsFinishedEvents[index].Release();
+                            }
+                        }
+                        catch(OperationCanceledException)
+                        {
+                            if(ThreadsCancellation.IsCancellationRequested)
+                            {
                                 break;
+                            }
+                            else
+                            {
+                                throw;
+                            }
                         }
                     }
                 });
