@@ -1,8 +1,6 @@
 using System.Threading;
 
-using compressor.Common.Threading;
-
-namespace compressor.Processor.Utils
+namespace compressor.Common.Threading
 {
     static class WaitHandleExtensionsForWaitOneAndDispose
     {
