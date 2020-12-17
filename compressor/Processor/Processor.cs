@@ -88,15 +88,13 @@ namespace compressor.Processor
                 }
                 catch(OperationCanceledException)
                 {
-                    if(cancellationOnError.IsCancellationRequested)
-                    {
-                        errors.Throw();
-                    }
-                    else
+                    if(!cancellationOnError.IsCancellationRequested)
                     {
                         throw;
                     }
                 }
+                // report errors if any
+                errors.Throw();
             }
         }
     };
