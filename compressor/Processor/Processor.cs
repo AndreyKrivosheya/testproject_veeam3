@@ -73,16 +73,30 @@ namespace compressor.Processor
                         {
                             errors.Add(e);
                             cancellationOnError.Cancel();
+                            break;
                         }
                     }
                 }
 
-                // previous block written event becomes last block written event
-                // when all blocks are queued for conversion and writing 
-                if(eventPreviousBlockWritten != null)
-                    eventPreviousBlockWritten.WaitOneAndDispose(cancellationOnError.Token);
-                // check if any errors happend
-                errors.Throw();
+                // wait last block is written
+                try
+                {
+                    // previous block written event becomes last block written event
+                    // when all blocks are queued for compression/decompression and writing 
+                    if(eventPreviousBlockWritten != null)
+                        eventPreviousBlockWritten.WaitOneAndDispose(cancellationOnError.Token);
+                }
+                catch(OperationCanceledException)
+                {
+                    if(cancellationOnError.IsCancellationRequested)
+                    {
+                        errors.Throw();
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
             }
         }
     };

@@ -8,12 +8,11 @@ namespace compressor.Common.Threading
     {
         public static void WaitOne(this WaitHandle waitHandle, CancellationToken cancellationToken)
         {
-            var waitHandles = new[] { waitHandle, cancellationToken.WaitHandle };
-            var waitFinishedForIndex = WaitHandle.WaitAny(waitHandles, Timeout.Infinite);
-            if(waitFinishedForIndex != 0)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-            }
+            cancellationToken.ThrowIfCancellationRequested();
+            
+            WaitHandle.WaitAny(new[] { waitHandle, cancellationToken.WaitHandle }, Timeout.Infinite);
+
+            cancellationToken.ThrowIfCancellationRequested();
         }
     }
 }
