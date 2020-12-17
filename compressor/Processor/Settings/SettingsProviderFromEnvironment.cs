@@ -66,18 +66,22 @@ namespace compressor.Processor.Settings
         {
             BlockSizeLazy = new Lazy<long>(() => {
                     var def = 1L * 1024 * 1024;
-                    var value = ReadFromEnvironmentVariableAndConvertToLong("COMPRESSOR_BLOCK_SIZE", def);
-                    return Math.Min(value >= 1 ? value : def, int.MaxValue);
+                    var
+                    value = ReadFromEnvironmentVariableAndConvertToLong("COMPRESSOR_BLOCK_SIZE", def);
+                    value = Math.Min(value >= 1 ? value : def, int.MaxValue);
+                    return value;
                 });
             MaxConcurrencyLazy = new Lazy<int>(() => {
                     var def = Environment.ProcessorCount;
-                    var value = ReadFromEnvironmentVariableAndConvertToInt("COMPRESSOR_MAX_CONCURRENCY", def);
-                    return value >= 1 ? value : def;
+                    var
+                    value = ReadFromEnvironmentVariableAndConvertToInt("COMPRESSOR_MAX_CONCURRENCY", def);
+                    value = value >= 1 ? value : def;
+                    return value;
                 });
         }
 
-        static readonly Lazy<SettingsProviderFromEnvironment> InstanceLazy = new Lazy<SettingsProviderFromEnvironment>(() => new SettingsProviderFromEnvironment());
-        public static SettingsProviderFromEnvironment Instance
+        static readonly Lazy<SettingsProvider> InstanceLazy = new Lazy<SettingsProvider>(() => new SettingsProviderFromEnvironment());
+        public static SettingsProvider Instance
         {
             get
             {

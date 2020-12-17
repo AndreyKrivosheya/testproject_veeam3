@@ -15,7 +15,7 @@ namespace compressor
             Console.WriteLine("compressor.exe compress|decompress in out");
         }
 
-        static void RunProcessor(string pathIn, string pathOut, Func<SettingsProvider, Processor.Processor> processorFactory)
+        static void RunProcessor(string pathIn, string pathOut, Processor.Processor processor)
         {
             var
             stopWatch = new System.Diagnostics.Stopwatch();
@@ -36,9 +36,7 @@ namespace compressor
                         {
                             outStream = new FileStream(pathOut, FileMode.CreateNew);
                         }
-                    
-                        var
-                        processor = processorFactory(SettingsProviderFromEnvironment.Instance);
+
                         processor.Process(inStream, outStream);
                     }
                     finally
@@ -57,6 +55,29 @@ namespace compressor
                 System.Diagnostics.Debug.WriteLine("Time took: '{0}'", stopWatch.Elapsed);
             }
         }
+        static void RunCompressor(string pathIn, string pathOut)
+        {
+            var settings = SettingsProviderFromEnvironment.Instance;
+            // adjust concurrency according with total blocks
+            // if total blocks is less then concurrency intended
+            var pathInSize = (new FileInfo(pathIn)).Length;
+            var pathInBlocks = pathInSize / settings.BlockSize;
+            if(pathInSize % settings.BlockSize != 0)
+            {
+                pathInBlocks = pathInBlocks + 1;
+            }
+            if(settings.MaxConcurrency > pathInBlocks)
+            {
+                settings = new SettingsProviderOverride(settings,
+                    concurrencyNoMoreThan: (int)pathInBlocks);
+            }
+            
+            RunProcessor(pathIn, pathOut, new ProcessorCompress(settings));
+        }
+        static void RunDecompressor(string pathIn, string pathOut)
+        {
+            RunProcessor(pathIn, pathOut, new ProcessorDecompress(SettingsProviderFromEnvironment.Instance));
+        }
 
         static int Main(string[] args)
         {
@@ -73,7 +94,7 @@ namespace compressor
                     {
                         try
                         {
-                            RunProcessor(args[1], args[2], (settings) => new ProcessorCompress(settings));
+                            RunCompressor(args[1], args[2]);
                             return 0;
                         }
                         catch(Exception e)
@@ -85,7 +106,7 @@ namespace compressor
                     {
                         try
                         {
-                            RunProcessor(args[1], args[2], (settings) => new ProcessorDecompress(settings));
+                            RunDecompressor(args[1], args[2]);
                             return 0;
                         }
                         catch(Exception e)
