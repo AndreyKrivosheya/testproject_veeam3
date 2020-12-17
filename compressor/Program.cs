@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 
+using compressor.Common;
 using compressor.Processor;
 using compressor.Processor.Settings;
 
@@ -124,42 +125,8 @@ namespace compressor
             }
             catch(Exception e)
             {
-                string GetMessagesChain(Exception e)
-                {
-                    var eAsAggregate = e as AggregateException;
-                    if(eAsAggregate != null)
-                    {
-                        if(eAsAggregate.InnerExceptions.Count > 0)
-                        {
-                            return string.Format("[{0}]", string.Join(", ", eAsAggregate.InnerExceptions.Select(x => string.Format("{{{0}}}", GetMessagesChain(x)))));
-                        }
-                        else
-                        {
-                            return eAsAggregate.Message;
-                        }
-                    }
-                    else
-                    {
-                        if(e.InnerException != null)
-                        {
-                            if(!string.IsNullOrEmpty(e.Message))
-                            {
-                                return string.Format("{0} => {1}", e.Message, GetMessagesChain(e.InnerException));
-                            }
-                            else
-                            {
-                                return GetMessagesChain(e.InnerException);
-                            }
-                        }
-                        else
-                        {
-                            return e.Message;
-                        }
-                    }
-                }
-
                 System.Diagnostics.Debug.WriteLine(e);
-                Console.WriteLine(GetMessagesChain(e));
+                Console.WriteLine(e.GetMessagesChain());
                 return 1;
             }
         }
