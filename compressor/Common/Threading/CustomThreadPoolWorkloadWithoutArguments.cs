@@ -6,7 +6,7 @@ namespace compressor.Common.Threading
 {
     class CustomThreadPoolWorkloadWithoutArguments : CustomThreadPoolWorkload
     {
-        public CustomThreadPoolWorkloadWithoutArguments(CancellationTokenSource cancellationTokenSource, Action workload) : base(cancellationTokenSource)
+        public CustomThreadPoolWorkloadWithoutArguments(Action workload)
         {
             this.Workload = workload;
         }

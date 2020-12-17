@@ -28,10 +28,8 @@ namespace compressor.Processor
             using(var threadPool = new CustomThreadPool(Settings.MaxConcurrency))
             {
                 ManualResetEvent eventPreviousBlockWritten = null;
-                while(true)
+                while(!cancellationOnError.IsCancellationRequested)
                 {
-                    // check if any errors happend
-                    errors.Throw();
                     // read next block and process
                     try
                     {
@@ -39,7 +37,7 @@ namespace compressor.Processor
                         if(block != null)
                         {
                             var eventThisBlockWritten = new ManualResetEvent(false);
-                            threadPool.Queue(cancellationOnError, (block, eventPreviousBlockWritten, eventThisBlockWritten) => {
+                            threadPool.Queue(cancellationOnError.Token, (block, eventPreviousBlockWritten, eventThisBlockWritten) => {
                                 try
                                 {
                                     // convert block (compress/decompress)

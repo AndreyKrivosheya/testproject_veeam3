@@ -6,8 +6,7 @@ namespace compressor.Common.Threading
 {
     class CustomThreadPoolWorkloadWithArguments<T> : CustomThreadPoolWorkload
     {
-        public CustomThreadPoolWorkloadWithArguments(CancellationTokenSource cancellationTokenSource, Action<T> workload, T arg)
-            : base(cancellationTokenSource)
+        public CustomThreadPoolWorkloadWithArguments(Action<T> workload, T arg)
         {
             this.Workload = workload;
             this.Arg = arg;
@@ -25,8 +24,7 @@ namespace compressor.Common.Threading
 
     class CustomThreadPoolWorkloadWithArguments<T1, T2> : CustomThreadPoolWorkload
     {
-        public CustomThreadPoolWorkloadWithArguments(CancellationTokenSource cancellationTokenSource, Action<T1, T2> workload, T1 arg1, T2 arg2)
-            : base(cancellationTokenSource)
+        public CustomThreadPoolWorkloadWithArguments(Action<T1, T2> workload, T1 arg1, T2 arg2)
         {
             this.Workload = workload;
             this.Arg1 = arg1;
@@ -46,8 +44,7 @@ namespace compressor.Common.Threading
 
     class CustomThreadPoolWorkloadWithArguments<T1, T2, T3> : CustomThreadPoolWorkload
     {
-        public CustomThreadPoolWorkloadWithArguments(CancellationTokenSource cancellationTokenSource, Action<T1, T2, T3> workload, T1 arg1, T2 arg2, T3 arg3)
-            : base(cancellationTokenSource)
+        public CustomThreadPoolWorkloadWithArguments(Action<T1, T2, T3> workload, T1 arg1, T2 arg2, T3 arg3)
         {
             this.Workload = workload;
             this.Arg1 = arg1;

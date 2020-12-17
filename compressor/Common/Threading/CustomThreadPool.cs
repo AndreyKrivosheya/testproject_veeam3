@@ -84,14 +84,6 @@ namespace compressor.Common.Threading
                 if(!ThreadsCancellation.IsCancellationRequested)
                 {
                     ThreadsCancellation.Cancel();
-                    for(var i = 0; i < Workloads.Length; ++i)
-                    {
-                        var workload = Workloads[i];
-                        if(workload != null)
-                        {
-                            workload.Cancel();
-                        }
-                    }
                 }
                 for(var i = 0; i < Threads.Length; ++i)
                 {
@@ -145,45 +137,41 @@ namespace compressor.Common.Threading
                 WorkloadsReadyEvents[idxFreeThread].Set();
             }
         }
-        void Queue(CancellationTokenSource cancellationTokenSource, CustomThreadPoolWorkload workload)
-        {
-            Queue(cancellationTokenSource == null ? CancellationToken.None : cancellationTokenSource.Token, workload);
-        }
 
-        public void Queue(CancellationTokenSource cancellationTokenSource, Action workload)
+        public void Queue(CancellationToken cancellationToken, Action workload)
         {
-            Queue(cancellationTokenSource, new CustomThreadPoolWorkloadWithoutArguments(cancellationTokenSource, workload));
+            Queue(cancellationToken, new CustomThreadPoolWorkloadWithoutArguments(workload));
         }
         public void Queue(Action workload)
         {
-            Queue(default(CancellationTokenSource), workload);
+            Queue(CancellationToken.None, workload);
         }
         
-        public void Queue<T>(CancellationTokenSource cancellationTokenSource, Action<T> workload, T arg)
+        public void Queue<T>(CancellationToken cancellationToken, Action<T> workload, T arg)
         {
-            Queue(cancellationTokenSource.Token, new CustomThreadPoolWorkloadWithArguments<T>(cancellationTokenSource, workload, arg));
+            Queue(cancellationToken, new CustomThreadPoolWorkloadWithArguments<T>(workload, arg));
         }
         public void Queue<T>(Action<T> workload, T arg)
         {
-            Queue(default(CancellationTokenSource), workload, arg);
+            Queue(CancellationToken.None, workload, arg);
         }
 
-        public void Queue<T1, T2>(CancellationTokenSource cancellationTokenSource, Action<T1, T2> workload, T1 arg1, T2 arg2)
+        public void Queue<T1, T2>(CancellationToken cancellationToken, Action<T1, T2> workload, T1 arg1, T2 arg2)
         {
-            Queue(cancellationTokenSource, new CustomThreadPoolWorkloadWithArguments<T1, T2>(cancellationTokenSource, workload, arg1, arg2));
+            Queue(cancellationToken, new CustomThreadPoolWorkloadWithArguments<T1, T2>(workload, arg1, arg2));
         }
         public void Queue<T1, T2>(Action<T1, T2> workload, T1 arg1, T2 arg2)
         {
-            Queue(default(CancellationTokenSource), workload, arg1, arg2);
+            Queue(CancellationToken.None, workload, arg1, arg2);
         }
 
-        public void Queue<T1, T2, T3>(CancellationTokenSource cancellationTokenSource, Action<T1, T2, T3> workload, T1 arg1, T2 arg2, T3 arg3)
+        public void Queue<T1, T2, T3>(CancellationToken cancellationToken, Action<T1, T2, T3> workload, T1 arg1, T2 arg2, T3 arg3)
         {
-            Queue(cancellationTokenSource, new CustomThreadPoolWorkloadWithArguments<T1, T2, T3>(cancellationTokenSource, workload, arg1, arg2, arg3));
+            Queue(cancellationToken, new CustomThreadPoolWorkloadWithArguments<T1, T2, T3>(workload, arg1, arg2, arg3));
         }
         public void Queue<T1, T2, T3>(Action<T1, T2, T3> workload, T1 arg1, T2 arg2, T3 arg3)
         {
-            Queue(default(CancellationTokenSource), workload, arg1, arg2, arg3);
+            Queue(default(CancellationToken), workload, arg1, arg2, arg3);
         }
     }
 }

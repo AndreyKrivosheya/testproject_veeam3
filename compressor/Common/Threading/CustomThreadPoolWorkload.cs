@@ -6,22 +6,8 @@ namespace compressor.Common.Threading
 {
     abstract class CustomThreadPoolWorkload
     {
-        public CustomThreadPoolWorkload(CancellationTokenSource cancellationTokenSource)
+        public CustomThreadPoolWorkload()
         {
-            this.CancellationTokenSource = cancellationTokenSource;
-        }
-
-        readonly CancellationTokenSource CancellationTokenSource;
-
-        public void Cancel()
-        {
-            if(this.CancellationTokenSource != null)
-            {
-                if(!this.CancellationTokenSource.IsCancellationRequested)
-                {
-                    this.CancellationTokenSource.Cancel();
-                }
-            }
         }
 
         public abstract void Invoke();
