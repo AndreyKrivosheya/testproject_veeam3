@@ -10,7 +10,7 @@ namespace compressor.Processor
     class ProcessorDecompress: Processor
     {
         public ProcessorDecompress(SettingsProvider settings)
-            : base(settings, Reader.FromArchive, Converter.Decompress, Writer.ToFile)
+            : base(settings, Reader.FromArchiveWithoutBlockSizes, Converter.Decompress, Writer.ToFile)
         {
         }
 

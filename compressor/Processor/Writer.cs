@@ -15,6 +15,10 @@ namespace compressor.Processor
         {
             return new WriterToArchive(settings);
         }
+        public static Writer ToArchiveWithoutBlockSizes(SettingsProvider settings)
+        {
+            return new WriterToArchiveWithoutBlockSizes(settings);
+        }
 
         public Writer(SettingsProvider settings)
             : base(settings)

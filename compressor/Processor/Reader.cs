@@ -16,6 +16,10 @@ namespace compressor.Processor
         {
             return new ReaderFromArchive(settings);
         }
+        public static Reader FromArchiveWithoutBlockSizes(SettingsProvider settings)
+        {
+            return new ReaderFromArchiveWithoutBlockSizes(settings);
+        }
 
         public Reader(SettingsProvider settings)
             : base(settings)

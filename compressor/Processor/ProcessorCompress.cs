@@ -8,7 +8,7 @@ namespace compressor.Processor
     class ProcessorCompress: Processor
     {
         public ProcessorCompress(SettingsProvider settings)
-            : base(settings, Reader.FromFile, Converter.Compress, Writer.ToArchive)
+            : base(settings, Reader.FromFile, Converter.Compress, Writer.ToArchiveWithoutBlockSizes)
         {
         }
          
