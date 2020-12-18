@@ -7,8 +7,8 @@ namespace compressor.Processor
 {
     class ReaderFromFile : Reader
     {
-        public ReaderFromFile(SettingsProvider settings)
-            : base(settings)
+        public ReaderFromFile(SettingsProvider settings, ReadingStrategy readingStrategy = null)
+            : base(settings, readingStrategy)
         {
         }
         
@@ -16,7 +16,7 @@ namespace compressor.Processor
         {
             try
             {
-                return base.ReadBlock(input);
+                return ReadingStrategy.ReadBytes(input, Settings.BlockSize);
             }
             catch(Exception e)
             {

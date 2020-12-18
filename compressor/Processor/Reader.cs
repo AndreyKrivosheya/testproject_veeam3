@@ -8,43 +8,18 @@ namespace compressor.Processor
     abstract class Reader : Component
     {
         public delegate Reader Factory(SettingsProvider settings);
-        public static Reader FromFile(SettingsProvider settings)
-        {
-            return new ReaderFromFile(settings);
-        }
-        public static Reader FromArchive(SettingsProvider settings)
-        {
-            return new ReaderFromArchive(settings);
-        }
-        public static Reader FromArchiveWithoutBlockSizes(SettingsProvider settings)
-        {
-            return new ReaderFromArchiveWithoutBlockSizes(settings);
-        }
+        public static Reader.Factory FromFile = (settings) => new ReaderFromFile(settings);
+        public static Reader.Factory FromArchive = (settings) => new ReaderFromArchive(settings);
+        public static Reader.Factory FromArchiveWithoutBlockSizes = (settings) => new ReaderFromArchiveWithoutBlockSizes(settings);
 
-        public Reader(SettingsProvider settings)
+        public Reader(SettingsProvider settings, ReadingStrategy readingStrategy = null)
             : base(settings)
         {
+            this.ReadingStrategy = readingStrategy ?? new ReadingStrategyFromFileSystem(settings);
         }
         
-        public virtual byte[] ReadBlock(Stream input)
-        {
-            var blockBuffer = new byte[Settings.BlockSize];
-            var blockActuallyRead = input.Read(blockBuffer, 0, blockBuffer.Length);
-            if(blockActuallyRead != 0)
-            {
-                var blockBufferActuallyRead = blockBuffer;
-                if(blockActuallyRead < blockBuffer.Length)
-                {
-                    blockBufferActuallyRead = new byte[blockActuallyRead];
-                    Array.Copy(blockBuffer, 0, blockBufferActuallyRead, 0, blockBufferActuallyRead.Length);
-                }
-                
-                return blockBufferActuallyRead;
-            }
-            else
-            {
-                return null;
-            }
-        }
+        protected readonly ReadingStrategy ReadingStrategy;
+
+        public abstract byte[] ReadBlock(Stream input);
     };
 }

@@ -7,8 +7,8 @@ namespace compressor.Processor
 {
     class WriterToArchive : Writer
     {
-        public WriterToArchive(SettingsProvider settings)
-            : base(settings)
+        public WriterToArchive(SettingsProvider settings, WritingStrategy writingStrategy = null)
+            : base(settings, writingStrategy)
         {
         }
         
@@ -20,8 +20,7 @@ namespace compressor.Processor
                 try
                 {
                     // strip out GZipStream header
-                    var blockLengthBuffer = BitConverter.GetBytes((Int64)(data.Length - GZipStreamHelper.Header.Length));
-                    output.Write(blockLengthBuffer, 0, blockLengthBuffer.Length);
+                    WritingStrategy.WriteBytes(output, BitConverter.GetBytes((Int64)(data.Length - GZipStreamHelper.Header.Length)));
                 }
                 catch(Exception e)
                 {
@@ -31,8 +30,8 @@ namespace compressor.Processor
                 try
                 {
                     // strip out GZipStream header
-                    output.Write(data, GZipStreamHelper.Header.Length, data.Length - GZipStreamHelper.Header.Length);
-                    output.Flush();
+                    WritingStrategy.WriteBytes(output, data, GZipStreamHelper.Header.Length);
+                    WritingStrategy.Flush(output);
                 }
                 catch(Exception e)
                 {

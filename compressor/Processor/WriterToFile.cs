@@ -7,8 +7,8 @@ namespace compressor.Processor
 {
     class WriterToFile : Writer
     {
-        public WriterToFile(SettingsProvider settings)
-            : base(settings)
+        public WriterToFile(SettingsProvider settings, WritingStrategy writingStrategy = null)
+            : base(settings, writingStrategy)
         {
         }
         
@@ -16,7 +16,8 @@ namespace compressor.Processor
         {
             try
             {
-                base.WriteBlock(output, data);
+                WritingStrategy.WriteBytes(output, data);
+                WritingStrategy.Flush(output);
             }
             catch(Exception e)
             {

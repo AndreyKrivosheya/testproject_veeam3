@@ -7,28 +7,18 @@ namespace compressor.Processor
     abstract class Writer : Component
     {
         public delegate Writer Factory(SettingsProvider settings);
-        public static Writer ToFile(SettingsProvider settings)
-        {
-            return new WriterToFile(settings);
-        }
-        public static Writer ToArchive(SettingsProvider settings)
-        {
-            return new WriterToArchive(settings);
-        }
-        public static Writer ToArchiveWithoutBlockSizes(SettingsProvider settings)
-        {
-            return new WriterToArchiveWithoutBlockSizes(settings);
-        }
+        public static Writer.Factory ToFile = (settings) => new WriterToFile(settings);
+        public static Writer.Factory ToArchive = (settings) => new WriterToArchive(settings);
+        public static Writer.Factory ToArchiveWithoutBlockSizes = (settings) => new WriterToArchiveWithoutBlockSizes(settings);
 
-        public Writer(SettingsProvider settings)
+        public Writer(SettingsProvider settings, WritingStrategy writingStrategy = null)
             : base(settings)
         {
+            this.WritingStrategy = writingStrategy ?? new WritingStrategyToFileSystem(settings);
         }
         
-        public virtual void WriteBlock(Stream output, byte[] data)
-        {
-            output.Write(data, 0, data.Length);
-            output.Flush();
-        }
+        protected readonly WritingStrategy WritingStrategy;
+
+        public abstract void WriteBlock(Stream output, byte[] data);
     };
 }

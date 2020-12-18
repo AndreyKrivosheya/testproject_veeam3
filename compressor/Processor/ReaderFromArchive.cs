@@ -7,8 +7,8 @@ namespace compressor.Processor
 {
     class ReaderFromArchive : Reader
     {
-        public ReaderFromArchive(SettingsProvider settings)
-            : base(settings)
+        public ReaderFromArchive(SettingsProvider settings, ReadingStrategy readingStrategy = null)
+            : base(settings, readingStrategy)
         {
         }
         
@@ -16,28 +16,31 @@ namespace compressor.Processor
         {
             try
             {
-                var blockLengthBuffer = new byte[sizeof(Int64)];
-                var blockLengthActuallyRead = input.Read(blockLengthBuffer, 0, blockLengthBuffer.Length);
-                if(blockLengthActuallyRead != 0)
+                var blockLengthBytes = ReadingStrategy.ReadBytes(input, sizeof(Int64), exactly: true);
+                if(blockLengthBytes != null)
                 {
-                    if(blockLengthActuallyRead != sizeof(Int64))
+                    if(blockLengthBytes.Length != sizeof(Int64))
                     {
                         throw new InvalidDataException("Failed to read next block size, read less bytes then block size length occupies");
                     }
                     else
                     {
-                        var blockBuffer = new byte[GZipStreamHelper.Header.Length + BitConverter.ToInt64(blockLengthBuffer, 0)];
-                        var blockActuallyRead = input.Read(blockBuffer, GZipStreamHelper.Header.Length, blockBuffer.Length - GZipStreamHelper.Header.Length);
-                        if(blockActuallyRead < blockBuffer.Length - GZipStreamHelper.Header.Length)
+                        var blockLength = BitConverter.ToInt64(blockLengthBytes, 0);
+                        var blockBytes = ReadingStrategy.ReadBytes(input, blockLength, exactly: true);
+                        if(blockBytes == null || blockBytes.Length < blockLength)
                         {
                             throw new InvalidDataException("Failed to read next block, read less bytes then block occupies");
                         }
                         else
                         {
-                            // prepend GZipStream header
-                            Array.Copy(GZipStreamHelper.Header, 0, blockBuffer, 0, GZipStreamHelper.Header.Length);
+                            using(var blockWithHeader = new MemoryStream((int)(GZipStreamHelper.Header.Length + blockLength)))
+                            using(var blockWithHeaderWriter = new BinaryWriter(blockWithHeader))
+                            {
+                                blockWithHeaderWriter.Write(GZipStreamHelper.Header);   // prepend GZipStream header
+                                blockWithHeaderWriter.Write(blockBytes);
                 
-                            return blockBuffer;
+                                return blockWithHeader.ToArray();
+                            }
                         }
                     }
                 }

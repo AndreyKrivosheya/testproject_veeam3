@@ -10,8 +10,8 @@ namespace compressor.Processor
 {
     class ReaderFromArchiveWithoutBlockSizes : Reader
     {
-        public ReaderFromArchiveWithoutBlockSizes(SettingsProvider settings)
-            : base(new SettingsProviderOverride(settings, blockSizeNoLessThan: GZipStreamHelper.Header.Length))
+        public ReaderFromArchiveWithoutBlockSizes(SettingsProvider settings, ReadingStrategy readingStrategy = null)
+            : base(new SettingsProviderOverride(settings, blockSizeNoLessThan: GZipStreamHelper.Header.Length), readingStrategy)
         {
         }
         
@@ -73,7 +73,7 @@ namespace compressor.Processor
                         }
                         else
                         {
-                            buffer = new Buffer(base.ReadBlock(input));
+                            buffer = new Buffer(ReadingStrategy.ReadBytes(input, Settings.BlockSize));
                             if(buffer == null || buffer.Data == null)
                             {
                                 // all read
