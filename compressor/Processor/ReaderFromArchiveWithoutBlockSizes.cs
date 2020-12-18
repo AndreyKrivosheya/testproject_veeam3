@@ -36,6 +36,7 @@ namespace compressor.Processor
         }
         readonly LinkedList<Buffer> Pending = new LinkedList<Buffer>();
         
+        bool allRead = false;
         public sealed override byte[] ReadBlock(Stream input)
         {
             try
@@ -52,22 +53,38 @@ namespace compressor.Processor
                         blockLength = 0;
                         if(Pending.Count > 0)
                         {
-                            buffer = Pending.First.Value;
+                            if(Pending.Count > 1)
+                            {
+                                blockLength = Pending.Select(b => b.LengthPending).Sum();
+                                buffer = null;
+                            }
+                            else
+                            {
+                                buffer = Pending.First.Value;
+                            }
                         }
                     }
                     // ... else from stream
                     if(buffer == null)
                     {
-                        buffer = new Buffer(base.ReadBlock(input));
-                        if(buffer == null || buffer.Data == null)
+                        if(allRead)
                         {
-                            // all read
                             break;
                         }
                         else
                         {
-                            // append buffer to pending
-                            Pending.AddLast(buffer);
+                            buffer = new Buffer(base.ReadBlock(input));
+                            if(buffer == null || buffer.Data == null)
+                            {
+                                // all read
+                                allRead = true;
+                                break;
+                            }
+                            else
+                            {
+                                // append buffer to pending
+                                Pending.AddLast(buffer);
+                            }
                         }
                     }
 
@@ -106,7 +123,7 @@ namespace compressor.Processor
                 }
 
                 // if all read and no block was pending...
-                if(blockLength == 0)
+                if(blockLength <= 0)
                 {
                     return null;
                 }
