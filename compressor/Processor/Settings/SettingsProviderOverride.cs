@@ -22,10 +22,17 @@ namespace compressor.Processor.Settings
             }
         }
 
-        public SettingsProviderOverride(SettingsProvider settings, int? concurrencyNoMoreThan = null)
+        public SettingsProviderOverride(SettingsProvider settings, int? concurrencyNoMoreThan = null, int? blockSizeNoLessThan = null)
         {
             BlockSizeLazy = new Lazy<long>(() => {
                     var value = settings.BlockSize;
+                    if(blockSizeNoLessThan.HasValue)
+                    {
+                        if(blockSizeNoLessThan.Value > 1)
+                        {
+                            value = Math.Max(blockSizeNoLessThan.Value, value);
+                        }
+                    }
                     return value;
                 });
             MaxConcurrencyLazy = new Lazy<int>(() => {

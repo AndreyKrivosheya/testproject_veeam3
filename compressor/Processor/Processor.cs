@@ -8,21 +8,26 @@ using compressor.Processor.Settings;
 
 namespace compressor.Processor
 {
-    abstract class Processor
+    abstract class Processor: Component
     {
-        public Processor(SettingsProvider settings)
+        public Processor(SettingsProvider settings, Reader.Factory readerFactory, Converter.Factory converterFactory, Writer.Factory writerFactory)
+            : base(settings)
         {
-            this.Settings = settings;
+            this.ReaderFactory = readerFactory;
+            this.ConverterFactory = converterFactory;
+            this.WriterFactory = writerFactory;
         }
         
-        protected readonly SettingsProvider Settings;
-         
-        protected abstract byte[] ReadBlock(Stream input);
-        protected abstract byte[] ConvertBlock(byte[] data);
-        protected abstract void WriteBlock(Stream output, byte[] data);
+        readonly Reader.Factory ReaderFactory;
+        readonly Converter.Factory ConverterFactory;
+        readonly Writer.Factory WriterFactory;
 
         public virtual void Process(Stream input, Stream output)
         {
+            var reader = ReaderFactory(Settings);
+            var converter = ConverterFactory(Settings);
+            var writer = WriterFactory(Settings);
+
             Errors errors = new Errors();
             using(var cancellationOnError = new CancellationTokenSource())
             using(var threadPool = new CustomThreadPool(Settings.MaxConcurrency))
@@ -33,7 +38,7 @@ namespace compressor.Processor
                     // read next block and process
                     try
                     {
-                        var block = ReadBlock(input);
+                        var block = reader.ReadBlock(input);
                         if(block != null)
                         {
                             var eventThisBlockWritten = new ManualResetEvent(false);
@@ -41,12 +46,12 @@ namespace compressor.Processor
                                 try
                                 {
                                     // convert block (compress/decompress)
-                                    var blockConverted = ConvertBlock(block);
+                                    var blockConverted = converter.ConvertBlock(block);
                                     // wait previous block was written to maintain order
                                     if(eventPreviousBlockWritten != null)
                                         eventPreviousBlockWritten.WaitOneAndDispose(cancellationOnError.Token);
                                     // write this block
-                                    WriteBlock(output, blockConverted);
+                                    writer.WriteBlock(output, blockConverted);
                                     // notify this block is written
                                     eventThisBlockWritten.Set();
                                 }
