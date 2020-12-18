@@ -16,7 +16,7 @@ namespace compressor.Processor.Settings
                 return Environment.ExpandEnvironmentVariables(value);
             }
         }
-        static T ReadFromEnvironmentVariableAndConvertToT<T>(string environmentVariableName, T defaultValue, Func<string, T> convertor)
+        static T ReadFromEnvironmentVariableAndConvertToT<T>(string environmentVariableName, T defaultValue, Func<string, T> converter)
         {
             var value = ReadFromEnvironmentVariable(environmentVariableName);
             if(string.IsNullOrEmpty(value))
@@ -27,7 +27,7 @@ namespace compressor.Processor.Settings
             {
                 try
                 {
-                    return convertor(value);
+                    return converter(value);
                 }
                 catch(Exception)
                 {
