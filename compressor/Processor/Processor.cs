@@ -27,17 +27,20 @@ namespace compressor.Processor
             using(var cancellationOnError = new CancellationTokenSource())
             using(var threadPool = new CustomThreadPool(Settings.MaxConcurrency))
             {
-                ManualResetEvent eventPreviousBlockWritten = null;
-                while(!cancellationOnError.IsCancellationRequested)
+                ManualResetEvent _eventPreviousBlockWritten = null;
+                while(true)
                 {
-                    // read next block and process
                     try
                     {
+                        cancellationOnError.Token.ThrowIfCancellationRequested();
+                        // read next block and process
                         var block = ReadBlock(input);
                         if(block != null)
                         {
                             var eventThisBlockWritten = new ManualResetEvent(false);
-                            threadPool.Queue(cancellationOnError.Token, (block, eventPreviousBlockWritten, eventThisBlockWritten) => {
+                            var eventPreviousBlockWritten = _eventPreviousBlockWritten; // bellow closure would capture different values each cycle repeat
+                            // convert and write async
+                            threadPool.Queue(cancellationOnError.Token, () => {
                                 try
                                 {
                                     // convert block (compress/decompress)
@@ -58,8 +61,9 @@ namespace compressor.Processor
                                         cancellationOnError.Cancel();
                                     }
                                 }
-                            }, block, eventPreviousBlockWritten, eventThisBlockWritten);
-                            eventPreviousBlockWritten = eventThisBlockWritten;
+                            });
+                            // this block written event becomes previous block written event
+                            _eventPreviousBlockWritten = eventThisBlockWritten;
                         }
                         else
                         {
@@ -75,6 +79,10 @@ namespace compressor.Processor
                             cancellationOnError.Cancel();
                             break;
                         }
+                        else
+                        {
+                            break;
+                        }
                     }
                 }
 
@@ -83,8 +91,8 @@ namespace compressor.Processor
                 {
                     // previous block written event becomes last block written event
                     // when all blocks are queued for compression/decompression and writing 
-                    if(eventPreviousBlockWritten != null)
-                        eventPreviousBlockWritten.WaitOneAndDispose(cancellationOnError.Token);
+                    if(_eventPreviousBlockWritten != null)
+                        _eventPreviousBlockWritten.WaitOneAndDispose(cancellationOnError.Token);
                 }
                 catch(OperationCanceledException)
                 {
@@ -95,6 +103,36 @@ namespace compressor.Processor
                 }
                 // report errors if any
                 errors.Throw();
+            }
+        }
+        
+        public virtual void Process(string input, string output)
+        {
+            FileStream outStream = null;
+            try
+            {
+                try
+                {
+                    outStream = new FileStream(output, FileMode.Open);
+                    outStream.SetLength(0);
+                }
+                catch(FileNotFoundException)
+                {
+                    outStream = new FileStream(output, FileMode.CreateNew);
+                }
+
+                using(var inStream = new FileStream(input, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    Process(inStream, outStream);
+                }
+            }
+            finally
+            {
+                if(outStream != null)
+                {
+                    outStream.Dispose();
+                    outStream = null;
+                }
             }
         }
     };

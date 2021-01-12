@@ -108,7 +108,7 @@ namespace compressor.Processor
             }
         }
 
-        public sealed override void Process(Stream input, Stream output)
+        public sealed override void Process(string input, string output)
         {
             try
             {
@@ -116,7 +116,7 @@ namespace compressor.Processor
             }
             catch(Exception e)
             {
-                throw new ApplicationException("Failed to compress", e);
+                throw new ApplicationException(string.Format("Failed to compress '{0}' to '{1}'", input, output), e);
             }
         }
     };
