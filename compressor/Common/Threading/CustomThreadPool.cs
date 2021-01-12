@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
@@ -20,7 +21,7 @@ namespace compressor.Common.Threading
             {
                 this.WorkloadsReadyEvents[i] = new AutoResetEvent(false);
             }
-            this.Workloads = new CustomThreadPoolWorkload[concurrency];
+            this.Workloads = new Action[concurrency];
 
             // spin off thread pool
             this.ThreadsCancellation = new CancellationTokenSource();
@@ -29,24 +30,29 @@ namespace compressor.Common.Threading
             {
                 Threads[i] = new Thread((obj) => {
                     var index = (int)obj;
+                    ThreadPoolThreadId.Value = index;
                     while(true)
                     {
                         try
                         {
                             WorkloadsReadyEvents[index].WaitOne(ThreadsCancellation.Token);
+                            WorkloadsReadyEvents[index].Reset();
                             try
                             {
-                                var workload = Workloads[index];
-                                if(workload != null)
+                                try
                                 {
-                                    try
+                                    if(Workloads[index] != null)
                                     {
-                                        workload.Invoke();
+                                        var workload = Workloads[index];
+                                        if(workload != null)
+                                        {
+                                            workload();
+                                        }
                                     }
-                                    finally
-                                    {
-                                        Workloads[index] = null;
-                                    }
+                                }
+                                finally
+                                {
+                                    Workloads[index] = null;
                                 }
                             }
                             finally
@@ -72,14 +78,16 @@ namespace compressor.Common.Threading
             }
         }
 
+
         CancellationTokenSource ThreadsCancellation;
         Thread[] Threads;
 
         Semaphore[] WorkloadsFinishedEvents;
         AutoResetEvent[] WorkloadsReadyEvents;
-        CustomThreadPoolWorkload[] Workloads;
+        Action[] Workloads;
 
-        
+        readonly ThreadLocal<int> ThreadPoolThreadId = new ThreadLocal<int>(() => -1);
+
         public virtual void Dispose()
         {
             // stop threads
@@ -131,7 +139,7 @@ namespace compressor.Common.Threading
             }
         }
 
-        void Queue(CancellationToken cancellationToken, CustomThreadPoolWorkload workload)
+        public void Queue(CancellationToken cancellationToken, Action workload)
         {
             var waitHandles = Enumerable.Concat(WorkloadsFinishedEvents, new [] { cancellationToken.WaitHandle }).ToArray();
             var idxFreeThread = WaitHandle.WaitAny(waitHandles, Timeout.Infinite);
@@ -140,42 +148,14 @@ namespace compressor.Common.Threading
                 Workloads[idxFreeThread] = workload;
                 WorkloadsReadyEvents[idxFreeThread].Set();
             }
-        }
-
-        public void Queue(CancellationToken cancellationToken, Action workload)
-        {
-            Queue(cancellationToken, new CustomThreadPoolWorkloadWithoutArguments(workload));
+            else
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
         }
         public void Queue(Action workload)
         {
             Queue(CancellationToken.None, workload);
-        }
-        
-        public void Queue<T>(CancellationToken cancellationToken, Action<T> workload, T arg)
-        {
-            Queue(cancellationToken, new CustomThreadPoolWorkloadWithArguments<T>(workload, arg));
-        }
-        public void Queue<T>(Action<T> workload, T arg)
-        {
-            Queue(CancellationToken.None, workload, arg);
-        }
-
-        public void Queue<T1, T2>(CancellationToken cancellationToken, Action<T1, T2> workload, T1 arg1, T2 arg2)
-        {
-            Queue(cancellationToken, new CustomThreadPoolWorkloadWithArguments<T1, T2>(workload, arg1, arg2));
-        }
-        public void Queue<T1, T2>(Action<T1, T2> workload, T1 arg1, T2 arg2)
-        {
-            Queue(CancellationToken.None, workload, arg1, arg2);
-        }
-
-        public void Queue<T1, T2, T3>(CancellationToken cancellationToken, Action<T1, T2, T3> workload, T1 arg1, T2 arg2, T3 arg3)
-        {
-            Queue(cancellationToken, new CustomThreadPoolWorkloadWithArguments<T1, T2, T3>(workload, arg1, arg2, arg3));
-        }
-        public void Queue<T1, T2, T3>(Action<T1, T2, T3> workload, T1 arg1, T2 arg2, T3 arg3)
-        {
-            Queue(default(CancellationToken), workload, arg1, arg2, arg3);
         }
     }
 }

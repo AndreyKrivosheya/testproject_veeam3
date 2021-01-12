@@ -23,32 +23,7 @@ namespace compressor
             stopWatch.Start();
             try
             {
-                using(var inStream = new FileStream(pathIn, FileMode.Open))
-                {
-                    Stream outStream = null;
-                    try
-                    {
-                        try
-                        {
-                            outStream = new FileStream(pathOut, FileMode.Open);
-                            outStream.SetLength(0);
-                        }
-                        catch(FileNotFoundException)
-                        {
-                            outStream = new FileStream(pathOut, FileMode.CreateNew);
-                        }
-
-                        processor.Process(inStream, outStream);
-                    }
-                    finally
-                    {
-                        if(outStream != null)
-                        {
-                            outStream.Dispose();
-                            outStream = null;
-                        }
-                    }
-                }
+                processor.Process(pathIn, pathOut);
             }
             finally
             {
@@ -61,18 +36,13 @@ namespace compressor
             var settings = SettingsProviderFromEnvironment.Instance;
             // adjust concurrency according with total blocks
             // if total blocks is less then concurrency intended
-            var pathInSize = (new FileInfo(pathIn)).Length;
-            var pathInBlocks = pathInSize / settings.BlockSize;
-            if(pathInSize % settings.BlockSize != 0)
-            {
-                pathInBlocks = pathInBlocks + 1;
-            }
+            var pathInBlocks = (int)Math.Round(((double)(new FileInfo(pathIn)).Length) / ((double)settings.BlockSize), 0, MidpointRounding.AwayFromZero);
             if(settings.MaxConcurrency > pathInBlocks)
             {
                 settings = new SettingsProviderOverride(settings,
                     concurrencyNoMoreThan: (int)pathInBlocks);
             }
-            
+
             RunProcessor(pathIn, pathOut, new ProcessorCompress(settings));
         }
         static void RunDecompressor(string pathIn, string pathOut)
@@ -93,27 +63,13 @@ namespace compressor
                 {
                     if(string.Equals("compress", args[0], StringComparison.InvariantCultureIgnoreCase))
                     {
-                        try
-                        {
-                            RunCompressor(args[1], args[2]);
-                            return 0;
-                        }
-                        catch(Exception e)
-                        {
-                            throw new ApplicationException(string.Format("Failed to compress '{0}' to '{1}'", args[1], args[2]), e);
-                        }
+                        RunCompressor(args[1], args[2]);
+                        return 0;
                     }
                     else if(string.Equals("decompress", args[0], StringComparison.InvariantCultureIgnoreCase))
                     {
-                        try
-                        {
-                            RunDecompressor(args[1], args[2]);
-                            return 0;
-                        }
-                        catch(Exception e)
-                        {
-                            throw new ApplicationException(string.Format("Failed to decompress '{0}' to '{1}'", args[1], args[2]), e);
-                        }
+                        RunDecompressor(args[1], args[2]);
+                        return 0;
                     }
                     else
                     {
