@@ -27,7 +27,7 @@ namespace compressor.Processor
             using(var cancellationOnError = new CancellationTokenSource())
             using(var threadPool = new CustomThreadPool(Settings.MaxConcurrency))
             {
-                ManualResetEvent _eventPreviousBlockWritten = null;
+                ManualResetEventSlim _eventPreviousBlockWritten = null;
                 while(true)
                 {
                     try
@@ -37,7 +37,7 @@ namespace compressor.Processor
                         var block = ReadBlock(input);
                         if(block != null)
                         {
-                            var eventThisBlockWritten = new ManualResetEvent(false);
+                            var eventThisBlockWritten = new ManualResetEventSlim(false);
                             var eventPreviousBlockWritten = _eventPreviousBlockWritten; // bellow closure would capture different values each cycle repeat
                             // convert and write async
                             threadPool.Queue(cancellationOnError.Token, () => {
