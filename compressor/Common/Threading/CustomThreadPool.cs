@@ -16,10 +16,10 @@ namespace compressor.Common.Threading
             {
                 this.WorkloadsFinishedEvents[i] = new Semaphore(1, 1);
             }
-            this.WorkloadsReadyEvents = new AutoResetEvent[concurrency];
+            this.WorkloadsReadyEvents = new ManualResetEventSlim[concurrency];
             for(var i = 0; i < concurrency; ++i)
             {
-                this.WorkloadsReadyEvents[i] = new AutoResetEvent(false);
+                this.WorkloadsReadyEvents[i] = new ManualResetEventSlim(false);
             }
             this.Workloads = new Action[concurrency];
 
@@ -83,7 +83,7 @@ namespace compressor.Common.Threading
         Thread[] Threads;
 
         Semaphore[] WorkloadsFinishedEvents;
-        AutoResetEvent[] WorkloadsReadyEvents;
+        ManualResetEventSlim[] WorkloadsReadyEvents;
         Action[] Workloads;
 
         readonly ThreadLocal<int> ThreadPoolThreadId = new ThreadLocal<int>(() => -1);
