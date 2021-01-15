@@ -7,6 +7,10 @@ namespace compressor.Processor
 {
     abstract class ReadingStrategy : Component
     {
+        public delegate ReadingStrategy Factory(SettingsProvider settings);
+        public static ReadingStrategy.Factory FromFileSystem = (settings) => new ReadingStrategyFromFileSystem(settings);
+        public static ReadingStrategy.Factory Default = FromFileSystem;
+
         public ReadingStrategy(SettingsProvider settings)
             : base(settings)
         {

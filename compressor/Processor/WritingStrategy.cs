@@ -7,6 +7,10 @@ namespace compressor.Processor
 {
     abstract class WritingStrategy : Component
     {
+        public delegate WritingStrategy Factory(SettingsProvider settings);
+        public static WritingStrategy.Factory ToFileSystem = (settings) => new WritingStrategyToFileSystem(settings);
+        public static WritingStrategy.Factory Default = ToFileSystem;
+
         public WritingStrategy(SettingsProvider settings)
             : base(settings)
         {

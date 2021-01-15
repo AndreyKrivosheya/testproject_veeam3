@@ -14,7 +14,7 @@ namespace compressor.Processor
         public Writer(SettingsProvider settings, WritingStrategy writingStrategy = null)
             : base(settings)
         {
-            this.WritingStrategy = writingStrategy ?? new WritingStrategyToFileSystem(settings);
+            this.WritingStrategy = writingStrategy ?? WritingStrategy.Default(settings);
         }
         
         protected readonly WritingStrategy WritingStrategy;

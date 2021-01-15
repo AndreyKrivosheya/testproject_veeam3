@@ -12,10 +12,10 @@ namespace compressor.Processor
         public static Reader.Factory FromArchive = (settings) => new ReaderFromArchive(settings);
         public static Reader.Factory FromArchiveWithoutBlockSizes = (settings) => new ReaderFromArchiveWithoutBlockSizes(settings);
 
-        public Reader(SettingsProvider settings, ReadingStrategy readingStrategy = null)
+        public Reader(SettingsProvider settings, ReadingStrategy readingStrategy)
             : base(settings)
         {
-            this.ReadingStrategy = readingStrategy ?? new ReadingStrategyFromFileSystem(settings);
+            this.ReadingStrategy = readingStrategy ?? ReadingStrategy.Default(settings);
         }
         
         protected readonly ReadingStrategy ReadingStrategy;
