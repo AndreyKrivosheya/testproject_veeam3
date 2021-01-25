@@ -14,7 +14,7 @@ namespace compressor.Processor
         {
         }
 
-        public sealed override void Process(string input, string output)
+        public sealed override void Process(Stream input, Stream output)
         {
             try
             {
@@ -22,7 +22,23 @@ namespace compressor.Processor
             }
             catch(Exception e)
             {
-                throw new ApplicationException(string.Format("Failed to decompress '{0}' to '{1}'", input, output), e);
+                throw new FailedToDecompressException(e);
+            }
+        }
+
+        public sealed override void Process(string input, string output)
+        {
+            try
+            {
+                base.Process(input, output);
+            }
+            catch(FailedToDecompressException e)
+            {
+                throw new FailedToDecompressException(input, output, e.InnerException);
+            }
+            catch(Exception e)
+            {
+                throw new FailedToDecompressException(input, output, e);
             }
         }
     };

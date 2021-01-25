@@ -95,7 +95,7 @@ namespace compressor.Processor
                 try
                 {
                     // previous block written event becomes last block written event
-                    // when all blocks are queued for compression/decompression and writing 
+                    // when all blocks are queued for compression/decompression and writing
                     if(_eventPreviousBlockWritten != null)
                         _eventPreviousBlockWritten.WaitOneAndDispose(cancellationOnError.Token);
                 }

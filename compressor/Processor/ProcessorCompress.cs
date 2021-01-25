@@ -20,7 +20,23 @@ namespace compressor.Processor
             }
             catch(Exception e)
             {
-                throw new ApplicationException("Failed to compress", e);
+                throw new FailedToCompressException(e);
+            }
+        }
+
+        public sealed override void Process(string input, string output)
+        {
+            try
+            {
+                base.Process(input, output);
+            }
+            catch(FailedToCompressException e)
+            {
+                throw new FailedToCompressException(input, output, e.InnerException);
+            }
+            catch(Exception e)
+            {
+                throw new FailedToCompressException(input, output, e);
             }
         }
     };
