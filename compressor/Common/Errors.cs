@@ -8,28 +8,29 @@ namespace compressor.Common
 {
     class Errors
     {
-        readonly LinkedList<ExceptionDispatchInfo> ExceptionInfos = new LinkedList<ExceptionDispatchInfo>();
+        readonly List<ExceptionDispatchInfo> ExceptionInfos = new List<ExceptionDispatchInfo>();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(Exception e)
         {
             lock(this.ExceptionInfos)
             {
-                this.ExceptionInfos.AddLast(ExceptionDispatchInfo.Capture(e));
+                this.ExceptionInfos.Add(ExceptionDispatchInfo.Capture(e));
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Throw(string message)
         {
-            ExceptionDispatchInfo[] errors;
+            List<ExceptionDispatchInfo> errors;
             lock(this.ExceptionInfos)
             {
-                errors = this.ExceptionInfos.ToArray();
+                errors = new List<ExceptionDispatchInfo>(this.ExceptionInfos);
+                this.ExceptionInfos.Clear();
             }
-            if(errors.Length > 0)
+            if(errors.Count > 0)
             {
-                if(errors.Length > 1)
+                if(errors.Count > 1)
                 {
                     var exceptions = errors.Select(e => e.SourceException);
                     if(!string.IsNullOrEmpty(message))
