@@ -108,30 +108,37 @@ namespace compressor.Processor
         
         public virtual void Process(string input, string output)
         {
-            FileStream outStream = null;
-            try
+            if(input == output)
             {
+                throw new ArgumentException("Can't process file into itself.");
+            }
+            else
+            {
+                FileStream outStream = null;
                 try
                 {
-                    outStream = new FileStream(output, FileMode.Open);
-                    outStream.SetLength(0);
-                }
-                catch(FileNotFoundException)
-                {
-                    outStream = new FileStream(output, FileMode.CreateNew);
-                }
+                    try
+                    {
+                        outStream = new FileStream(output, FileMode.Open);
+                        outStream.SetLength(0);
+                    }
+                    catch(FileNotFoundException)
+                    {
+                        outStream = new FileStream(output, FileMode.CreateNew);
+                    }
 
-                using(var inStream = new FileStream(input, FileMode.Open, FileAccess.Read, FileShare.Read))
-                {
-                    Process(inStream, outStream);
+                    using(var inStream = new FileStream(input, FileMode.Open, FileAccess.Read, FileShare.Read))
+                    {
+                        Process(inStream, outStream);
+                    }
                 }
-            }
-            finally
-            {
-                if(outStream != null)
+                finally
                 {
-                    outStream.Dispose();
-                    outStream = null;
+                    if(outStream != null)
+                    {
+                        outStream.Dispose();
+                        outStream = null;
+                    }
                 }
             }
         }
