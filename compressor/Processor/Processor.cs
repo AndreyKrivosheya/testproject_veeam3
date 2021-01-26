@@ -23,86 +23,93 @@ namespace compressor.Processor
 
         public virtual void Process(Stream input, Stream output)
         {
-            Errors errors = new Errors();
-            using(var cancellationOnError = new CancellationTokenSource())
-            using(var threadPool = new CustomThreadPool(Settings.MaxConcurrency))
+            if(input == output)
             {
-                ManualResetEventSlim _eventPreviousBlockWritten = null;
-                while(true)
+                throw new ArgumentException("Can't process stream into itself");
+            }
+            else
+            {
+                Errors errors = new Errors();
+                using(var cancellationOnError = new CancellationTokenSource())
+                using(var threadPool = new CustomThreadPool(Settings.MaxConcurrency))
                 {
+                    ManualResetEventSlim _eventPreviousBlockWritten = null;
+                    while(true)
+                    {
+                        try
+                        {
+                            cancellationOnError.Token.ThrowIfCancellationRequested();
+                            // read next block and process
+                            var block = ReadBlock(input);
+                            if(block != null)
+                            {
+                                var eventThisBlockWritten = new ManualResetEventSlim(false);
+                                var eventPreviousBlockWritten = _eventPreviousBlockWritten; // bellow closure would capture different values each cycle repeat
+                                // convert and write async
+                                threadPool.Queue(cancellationOnError.Token, () => {
+                                    try
+                                    {
+                                        // convert block (compress/decompress)
+                                        var blockConverted = ConvertBlock(block);
+                                        // wait previous block was written to maintain order
+                                        if(eventPreviousBlockWritten != null)
+                                            eventPreviousBlockWritten.WaitOneAndDispose(cancellationOnError.Token);
+                                        // write this block
+                                        WriteBlock(output, blockConverted);
+                                        // notify this block is written
+                                        eventThisBlockWritten.Set();
+                                    }
+                                    catch(Exception e)
+                                    {
+                                        if(!(e is OperationCanceledException) || !cancellationOnError.IsCancellationRequested)
+                                        {
+                                            errors.Add(e);
+                                            cancellationOnError.Cancel();
+                                        }
+                                    }
+                                });
+                                // this block written event becomes previous block written event
+                                _eventPreviousBlockWritten = eventThisBlockWritten;
+                            }
+                            else
+                            {
+                                // all read
+                                break;
+                            }
+                        }
+                        catch(Exception e)
+                        {
+                            if(!(e is OperationCanceledException) || !cancellationOnError.IsCancellationRequested)
+                            {
+                                errors.Add(e);
+                                cancellationOnError.Cancel();
+                                break;
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+                    }
+
+                    // wait last block is written
                     try
                     {
-                        cancellationOnError.Token.ThrowIfCancellationRequested();
-                        // read next block and process
-                        var block = ReadBlock(input);
-                        if(block != null)
-                        {
-                            var eventThisBlockWritten = new ManualResetEventSlim(false);
-                            var eventPreviousBlockWritten = _eventPreviousBlockWritten; // bellow closure would capture different values each cycle repeat
-                            // convert and write async
-                            threadPool.Queue(cancellationOnError.Token, () => {
-                                try
-                                {
-                                    // convert block (compress/decompress)
-                                    var blockConverted = ConvertBlock(block);
-                                    // wait previous block was written to maintain order
-                                    if(eventPreviousBlockWritten != null)
-                                        eventPreviousBlockWritten.WaitOneAndDispose(cancellationOnError.Token);
-                                    // write this block
-                                    WriteBlock(output, blockConverted);
-                                    // notify this block is written
-                                    eventThisBlockWritten.Set();
-                                }
-                                catch(Exception e)
-                                {
-                                    if(!(e is OperationCanceledException) || !cancellationOnError.IsCancellationRequested)
-                                    {
-                                        errors.Add(e);
-                                        cancellationOnError.Cancel();
-                                    }
-                                }
-                            });
-                            // this block written event becomes previous block written event
-                            _eventPreviousBlockWritten = eventThisBlockWritten;
-                        }
-                        else
-                        {
-                            // all read
-                            break;
-                        }
+                        // previous block written event becomes last block written event
+                        // when all blocks are queued for compression/decompression and writing 
+                        if(_eventPreviousBlockWritten != null)
+                            _eventPreviousBlockWritten.WaitOneAndDispose(cancellationOnError.Token);
                     }
-                    catch(Exception e)
+                    catch(OperationCanceledException)
                     {
-                        if(!(e is OperationCanceledException) || !cancellationOnError.IsCancellationRequested)
+                        if(!cancellationOnError.IsCancellationRequested)
                         {
-                            errors.Add(e);
-                            cancellationOnError.Cancel();
-                            break;
-                        }
-                        else
-                        {
-                            break;
+                            throw;
                         }
                     }
+                    // report errors if any
+                    errors.Throw();
                 }
-
-                // wait last block is written
-                try
-                {
-                    // previous block written event becomes last block written event
-                    // when all blocks are queued for compression/decompression and writing 
-                    if(_eventPreviousBlockWritten != null)
-                        _eventPreviousBlockWritten.WaitOneAndDispose(cancellationOnError.Token);
-                }
-                catch(OperationCanceledException)
-                {
-                    if(!cancellationOnError.IsCancellationRequested)
-                    {
-                        throw;
-                    }
-                }
-                // report errors if any
-                errors.Throw();
             }
         }
         
