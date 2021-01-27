@@ -54,23 +54,31 @@ namespace compressor.Processor
                                 threadPool.Queue(cancellationOnError.Token, () => {
                                     try
                                     {
-                                        // convert block (compress/decompress)
-                                        var blockConverted = converter.ConvertBlock(block);
-                                        // wait previous block was written to maintain order
-                                        if(eventPreviousBlockWritten != null)
-                                            eventPreviousBlockWritten.WaitOneAndDispose(cancellationOnError.Token);
-                                        // write this block
-                                        writer.WriteBlock(output, blockConverted);
+                                        try
+                                        {
+                                            // convert block (compress/decompress)
+                                            var blockConverted = converter.ConvertBlock(block);
+                                            // wait previous block was written to maintain order
+                                            if(eventPreviousBlockWritten != null)
+                                            {
+                                                eventPreviousBlockWritten.WaitOneAndDispose(cancellationOnError.Token);
+                                            }
+                                            // write this block
+                                            writer.WriteBlock(output, blockConverted);
+                                        }
+                                        catch(Exception e)
+                                        {
+                                            if(!(e is OperationCanceledException) || !cancellationOnError.IsCancellationRequested)
+                                            {
+                                                errors.Add(e);
+                                                cancellationOnError.Cancel();
+                                            }
+                                        }
+                                    }
+                                    finally
+                                    {
                                         // notify this block is written
                                         eventThisBlockWritten.Set();
-                                    }
-                                    catch(Exception e)
-                                    {
-                                        if(!(e is OperationCanceledException) || !cancellationOnError.IsCancellationRequested)
-                                        {
-                                            errors.Add(e);
-                                            cancellationOnError.Cancel();
-                                        }
                                     }
                                 });
                                 // this block written event becomes previous block written event
@@ -98,23 +106,16 @@ namespace compressor.Processor
                     }
 
                     // wait last block is written
-                    try
+                    // ... previous block written event becomes last block written event
+                    // ... when all blocks are queued for compression/decompression and writing 
+                    if(_eventPreviousBlockWritten != null)
                     {
-                        // previous block written event becomes last block written event
-                        // when all blocks are queued for compression/decompression and writing
-                        if(_eventPreviousBlockWritten != null)
-                            _eventPreviousBlockWritten.WaitOneAndDispose(cancellationOnError.Token);
-                    }
-                    catch(OperationCanceledException)
-                    {
-                        if(!cancellationOnError.IsCancellationRequested)
-                        {
-                            throw;
-                        }
+                        _eventPreviousBlockWritten.WaitOneAndDispose();
                     }
                     // report errors if any
                     errors.Throw();
                 }
+            }
         }
         
         public virtual void Process(string input, string output)
