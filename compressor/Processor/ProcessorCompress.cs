@@ -84,7 +84,7 @@ namespace compressor.Processor
             }
         }
 
-        protected sealed override void WriteBlock(Stream output, byte[] data)
+        protected sealed override void WriteBlock(Stream output, byte[] data, bool flush)
         {
             // write block data length
             try
@@ -100,7 +100,10 @@ namespace compressor.Processor
             try
             {
                 output.Write(data, 0, data.Length);
-                output.Flush();
+                if(flush)
+                {
+                    output.Flush();
+                }
             }
             catch(Exception e)
             {
