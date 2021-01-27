@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 
@@ -38,7 +39,8 @@ namespace compressor.Processor
                 using(var cancellationOnError = new CancellationTokenSource())
                 using(var threadPool = new CustomThreadPool(Settings.MaxConcurrency))
                 {
-                    ManualResetEventSlim _eventPreviousBlockWritten = null;
+                    ManualResetEventSlim _eventPreviousBlockProcessed = null;
+                    List<byte[]> blocksToWrite = new List<byte[]>(Settings.MaxConcurrency);
                     while(true)
                     {
                         try
@@ -48,10 +50,11 @@ namespace compressor.Processor
                             var block = reader.ReadBlock(input);
                             if(block != null)
                             {
-                                var eventThisBlockWritten = new ManualResetEventSlim(false);
-                                var eventPreviousBlockWritten = _eventPreviousBlockWritten; // bellow closure would capture different values each cycle repeat
+                                var eventThisBlockProcessed = new ManualResetEventSlim(false);
+                                var eventPreviousBlockProcessed = _eventPreviousBlockProcessed; // bellow closure would capture different values each cycle repeat
                                 // convert and write async
                                 threadPool.Queue(cancellationOnError.Token, () => {
+                                    bool eventThisBlockProcessedWasSet = false;
                                     try
                                     {
                                         try
@@ -59,12 +62,22 @@ namespace compressor.Processor
                                             // convert block (compress/decompress)
                                             var blockConverted = converter.ConvertBlock(block);
                                             // wait previous block was written to maintain order
-                                            if(eventPreviousBlockWritten != null)
+                                            if(eventPreviousBlockProcessed != null)
                                             {
-                                                eventPreviousBlockWritten.WaitOneAndDispose(cancellationOnError.Token);
+                                                eventPreviousBlockProcessed.WaitOneAndDispose(cancellationOnError.Token);
                                             }
-                                            // write this block
-                                            writer.WriteBlock(output, blockConverted);
+                                            // queue this block for writing
+                                            blocksToWrite.Add(blockConverted);
+                                            if(blocksToWrite.Count >= blocksToWrite.Capacity)
+                                            {
+                                                var blocksToWriteCopy = new List<byte[]>(blocksToWrite);
+                                                blocksToWrite.Clear();
+                                                // notify this block is written
+                                                eventThisBlockProcessed.Set();
+                                                eventThisBlockProcessedWasSet = true;
+                                                // write blocks
+                                                writer.WriteBlocks(output, blocksToWriteCopy);
+                                            }
                                         }
                                         catch(Exception e)
                                         {
@@ -78,15 +91,33 @@ namespace compressor.Processor
                                     finally
                                     {
                                         // notify this block is written
-                                        eventThisBlockWritten.Set();
+                                        if(!eventThisBlockProcessedWasSet)
+                                        {
+                                            eventThisBlockProcessed.Set();
+                                        }
                                     }
                                 });
                                 // this block written event becomes previous block written event
-                                _eventPreviousBlockWritten = eventThisBlockWritten;
+                                _eventPreviousBlockProcessed = eventThisBlockProcessed;
                             }
                             else
                             {
                                 // all read
+                                {
+                                    // wait last block is processed
+                                    // ... previous block processed event becomes last block processed event
+                                    // ... when all blocks are queued for compression/decompression and writing 
+                                    if(_eventPreviousBlockProcessed != null)
+                                    {
+                                        _eventPreviousBlockProcessed.WaitOneAndDispose(cancellationOnError.Token);
+                                    }
+                                    // write blocks left, if any
+                                    if(blocksToWrite.Count > 0)
+                                    {
+                                        writer.WriteBlocks(output, blocksToWrite);
+                                        blocksToWrite.Clear();
+                                    }
+                                }
                                 break;
                             }
                         }
@@ -105,13 +136,6 @@ namespace compressor.Processor
                         }
                     }
 
-                    // wait last block is written
-                    // ... previous block written event becomes last block written event
-                    // ... when all blocks are queued for compression/decompression and writing 
-                    if(_eventPreviousBlockWritten != null)
-                    {
-                        _eventPreviousBlockWritten.WaitOneAndDispose();
-                    }
                     // report errors if any
                     errors.Throw();
                 }

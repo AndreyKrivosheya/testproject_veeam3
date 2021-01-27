@@ -12,7 +12,7 @@ namespace compressor.Processor
         {
         }
         
-        public sealed override void WriteBlock(Stream output, byte[] data)
+        protected sealed override void WriteBlock(Stream output, byte[] data, bool flush)
         {
             if(data.Length > GZipStreamHelper.Header.Length)
             {
@@ -31,7 +31,10 @@ namespace compressor.Processor
                 {
                     // strip out GZipStream header
                     WritingStrategy.WriteBytes(output, data, GZipStreamHelper.Header.Length);
-                    WritingStrategy.Flush(output);
+                    if(flush)
+                    {
+                        WritingStrategy.Flush(output);
+                    }
                 }
                 catch(Exception e)
                 {

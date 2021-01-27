@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 
 using compressor.Processor.Settings;
@@ -19,6 +20,18 @@ namespace compressor.Processor
         
         protected readonly WritingStrategy WritingStrategy;
 
-        public abstract void WriteBlock(Stream output, byte[] data);
+        protected abstract void WriteBlock(Stream output, byte[] data, bool flush);
+        public void WriteBlock(Stream output, byte[] data)
+        {
+            WriteBlock(output, data, true);
+        }
+        public void WriteBlocks(Stream output, IEnumerable<byte[]> datas)
+        {
+            foreach(var data in datas)
+            {
+                WriteBlock(output, data, false);
+            }
+            WritingStrategy.Flush(output);
+        }
     };
 }

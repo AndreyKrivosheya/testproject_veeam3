@@ -12,12 +12,15 @@ namespace compressor.Processor
         {
         }
         
-        public sealed override void WriteBlock(Stream output, byte[] data)
+        protected sealed override void WriteBlock(Stream output, byte[] data, bool flush)
         {
             try
             {
                 WritingStrategy.WriteBytes(output, data);
-                WritingStrategy.Flush(output);
+                if(flush)
+                {
+                    WritingStrategy.Flush(output);
+                }
             }
             catch(Exception e)
             {
